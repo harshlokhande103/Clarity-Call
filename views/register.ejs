@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Register - Clarity Call</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="container">
+    <h1>Register</h1>
+    
+    <% if(typeof error !== 'undefined') { %>
+      <div class="alert alert-danger"><%= error %></div>
+    <% } %>
+    
+    <!-- Change the form action to point to the correct endpoint -->
+    <form action="/api/users/register" method="POST">
+      <div class="form-group">
+        <label for="name">Name</label>
+        <input type="text" id="name" name="name" required>
+      </div>
+      
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input type="email" id="email" name="email" required>
+      </div>
+      
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" required>
+      </div>
+      
+      <div class="form-group">
+        <label for="phone">Phone</label>
+        <input type="text" id="phone" name="phone">
+      </div>
+      
+      <div class="form-group">
+        <label>Register as:</label>
+        <div class="radio-group">
+          <input type="radio" id="client" name="role" value="client" checked>
+          <label for="client">Client</label>
+          
+          <input type="radio" id="mentor" name="role" value="mentor">
+          <label for="mentor">Mentor</label>
+        </div>
+      </div>
+      
+      <!-- Additional fields for mentor (hidden by default) -->
+      <div id="mentor-fields" style="display: none;">
+        <div class="form-group">
+          <label for="specialization">Specialization</label>
+          <input type="text" id="specialization" name="specialization">
+        </div>
+        
+        <div class="form-group">
+          <label for="experience">Experience (years)</label>
+          <input type="number" id="experience" name="experience" min="0">
+        </div>
+        
+        <div class="form-group">
+          <label for="bio">Bio</label>
+          <textarea id="bio" name="bio" rows="3"></textarea>
+        </div>
+        
+        <div class="form-group">
+          <label for="hourlyRate">Hourly Rate ($)</label>
+          <input type="number" id="hourlyRate" name="hourlyRate" min="0">
+        </div>
+      </div>
+      
+      <!-- Additional fields for client (hidden by default) -->
+      <div id="client-fields" style="display: block;">
+        <div class="form-group">
+          <label for="issues">Issues (comma separated)</label>
+          <textarea id="issues" name="issues" rows="3"></textarea>
+        </div>
+      </div>
+      
+      <button type="submit" class="btn btn-primary">Register</button>
+    </form>
+    
+    <p>Already have an account? <a href="/login">Login</a></p>
+  </div>
+  
+  <script>
+    // Show/hide fields based on selected role
+    document.querySelectorAll('input[name="role"]').forEach(radio => {
+      radio.addEventListener('change', function() {
+        if (this.value === 'mentor') {
+          document.getElementById('mentor-fields').style.display = 'block';
+          document.getElementById('client-fields').style.display = 'none';
+        } else {
+          document.getElementById('mentor-fields').style.display = 'none';
+          document.getElementById('client-fields').style.display = 'block';
+        }
+      });
+    });
+  </script>
+</body>
+</html>

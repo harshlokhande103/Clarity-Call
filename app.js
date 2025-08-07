@@ -1,10 +1,15 @@
+// Add this at the top of your app.js file
+process.on('warning', e => console.warn(e.stack));
+
+// Suppress specific deprecation warnings
+process.env.NODE_NO_WARNINGS = '1';
+
 const express = require('express');
 const dotenv = require('dotenv');
 const connectDB = require('./config/db');
 const path = require('path');
 const cookieParser = require('cookie-parser');
 const session = require('express-session');
-const flash = require('connect-flash');
 
 // Load env vars
 dotenv.config();
@@ -19,7 +24,6 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
 // Cookie parser
-// Make sure this is included before your routes
 app.use(cookieParser());
 
 // Express session
@@ -31,14 +35,24 @@ app.use(
   })
 );
 
-// Connect flash
-app.use(flash());
-
-// Global variables
+// Custom flash middleware
 app.use((req, res, next) => {
-  res.locals.success_msg = req.flash('success_msg');
-  res.locals.error_msg = req.flash('error_msg');
-  res.locals.error = req.flash('error');
+  // Add flash methods to req
+  req.flash = function(type, message) {
+    if (!req.session.flash) {
+      req.session.flash = {};
+    }
+    if (!req.session.flash[type]) {
+      req.session.flash[type] = [];
+    }
+    req.session.flash[type].push(message);
+  };
+
+  // Add flash messages to res.locals
+  res.locals.success_msg = req.session.flash?.success_msg || [];
+  res.locals.error_msg = req.session.flash?.error_msg || [];
+  res.locals.error = req.session.flash?.error || [];
+
   next();
 });
 
@@ -50,8 +64,6 @@ app.set('view engine', 'ejs');
 
 // Routes
 app.use('/api/users', require('./routes/userRoutes'));
-app.use('/api/appointments', require('./routes/appointmentRoutes'));
-app.use('/api/chats', require('./routes/chatRoutes'));
 app.use('/', require('./routes/viewRoutes'));
 
 const PORT = process.env.PORT || 3000;

@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
-const { User, Mentor, Client } = require('../models/User');
+const User = require('../models/User');
 
 // Generate JWT
 const generateToken = (id) => {
@@ -14,7 +14,7 @@ const generateToken = (id) => {
 // @access  Public
 const registerUser = async (req, res) => {
   try {
-    const { name, email, password, role, phone } = req.body;
+    const { name, email, password } = req.body;
 
     // Check if user exists
     const userExists = await User.findOne({ email });
@@ -24,38 +24,12 @@ const registerUser = async (req, res) => {
       return res.redirect('/register');
     }
 
-    // Create user with hashed password
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
-
+    // Create user
     const user = await User.create({
       name,
       email,
-      password: hashedPassword,
-      role,
-      phone
+      password
     });
-
-    // Create additional profile based on role
-    if (role === 'mentor') {
-      const { specialization, experience, bio, hourlyRate, availability } = req.body;
-      
-      await Mentor.create({
-        user: user._id,
-        specialization,
-        experience,
-        bio,
-        hourlyRate,
-        availability: availability || []
-      });
-    } else if (role === 'client') {
-      const { issues } = req.body;
-      
-      await Client.create({
-        user: user._id,
-        issues: issues || []
-      });
-    }
 
     if (user) {
       // Create token
@@ -74,7 +48,7 @@ const registerUser = async (req, res) => {
       res.redirect('/register');
     }
   } catch (error) {
-    console.error(error);
+    console.error('Registration error:', error);
     req.flash('error_msg', 'Server Error');
     res.redirect('/register');
   }
@@ -95,8 +69,8 @@ const loginUser = async (req, res) => {
       return res.redirect('/login');
     }
     
-    // Check password
-    const isMatch = await bcrypt.compare(password, user.password);
+    // Check if password matches
+    const isMatch = await user.matchPassword(password);
     
     if (!isMatch) {
       req.flash('error_msg', 'Invalid email or password');
@@ -115,7 +89,7 @@ const loginUser = async (req, res) => {
     // Redirect to dashboard
     res.redirect('/dashboard');
   } catch (error) {
-    console.error(error);
+    console.error('Login error:', error);
     req.flash('error_msg', 'Server Error');
     res.redirect('/login');
   }
@@ -129,39 +103,11 @@ const getUserProfile = async (req, res) => {
     const user = await User.findById(req.user._id);
 
     if (user) {
-      let profileData = {
+      res.json({
         _id: user._id,
         name: user.name,
-        email: user.email,
-        role: user.role,
-        phone: user.phone
-      };
-
-      // Get additional profile data based on role
-      if (user.role === 'mentor') {
-        const mentorProfile = await Mentor.findOne({ user: user._id });
-        if (mentorProfile) {
-          profileData = {
-            ...profileData,
-            specialization: mentorProfile.specialization,
-            experience: mentorProfile.experience,
-            bio: mentorProfile.bio,
-            hourlyRate: mentorProfile.hourlyRate,
-            availability: mentorProfile.availability,
-            rating: mentorProfile.rating
-          };
-        }
-      } else if (user.role === 'client') {
-        const clientProfile = await Client.findOne({ user: user._id });
-        if (clientProfile) {
-          profileData = {
-            ...profileData,
-            issues: clientProfile.issues
-          };
-        }
-      }
-
-      res.json(profileData);
+        email: user.email
+      });
     } else {
       res.status(404).json({ message: 'User not found' });
     }
@@ -171,30 +117,8 @@ const getUserProfile = async (req, res) => {
   }
 };
 
-// @desc    Get all mentors
-// @route   GET /api/users/mentors
-// @access  Public
-const getMentors = async (req, res) => {
-  try {
-    // Find all users with role 'mentor'
-    const mentorUsers = await User.find({ role: 'mentor' }).select('-password');
-    
-    // Get mentor profiles
-    const mentors = await Mentor.find({
-      user: { $in: mentorUsers.map(user => user._id) }
-    }).populate('user', 'name email');
-    
-    res.json(mentors);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Server Error' });
-  }
-};
-
-// Add this to the exports
 module.exports = {
   registerUser,
   loginUser,
-  getUserProfile,
-  getMentors
+  getUserProfile
 };

@@ -3,89 +3,120 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dashboard - Clarity Call</title>
+  <title><%= title %></title>
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
   <div class="container">
-    <%- include('partials/header') %>
+    <h1>Welcome to your Dashboard</h1>
     
-    <main>
-      <h1>Welcome, <%= user.name %></h1>
+    <div class="user-info">
+      <h2>User Information</h2>
+      <p><strong>Name:</strong> <%= user.name %></p>
+      <p><strong>Email:</strong> <%= user.email %></p>
+      <p><strong>Roles:</strong> 
+        <% if(user.roles && user.roles.includes('client')) { %>
+          <span class="badge badge-primary">Mentee</span>
+        <% } %>
+        <% if(user.roles && user.roles.includes('mentor')) { %>
+          <span class="badge badge-success">Mentor</span>
+        <% } %>
+      </p>
+    </div>
+    
+    <div class="dashboard-tabs">
+      <div class="tab-buttons">
+        <button class="tab-btn active" data-tab="mentee-tab">Mentee Dashboard</button>
+        <% if(user.roles && user.roles.includes('mentor')) { %>
+          <button class="tab-btn" data-tab="mentor-tab">Mentor Dashboard</button>
+        <% } %>
+      </div>
       
-      <% if(user.role === 'client') { %>
-        <!-- Client Dashboard -->
-        <section class="dashboard-section">
-          <h2>Find Mentors</h2>
+      <div class="tab-content">
+        <!-- Mentee Dashboard Tab -->
+        <div class="tab-pane active" id="mentee-tab">
+          <h3>Find Mentors</h3>
           <div class="search-box">
-            <input type="text" id="search-mentor" placeholder="Search by specialization...">
-            <button class="btn btn-primary">Search</button>
+            <input type="text" id="search-mentor" placeholder="Search mentors by name, specialization...">
           </div>
-          
           <div id="mentors-list" class="cards-container">
             <!-- Mentors will be loaded here -->
+            <p>Loading mentors...</p>
           </div>
-        </section>
-        
-        <section class="dashboard-section">
-          <h2>Your Appointments</h2>
-          <div id="appointments-list" class="cards-container">
-            <!-- Appointments will be loaded here -->
-          </div>
-        </section>
-      <% } else { %>
-        <!-- Mentor Dashboard -->
-        <section class="dashboard-section">
-          <h2>Your Appointments</h2>
-          <div id="appointments-list" class="cards-container">
-            <!-- Appointments will be loaded here -->
-          </div>
-        </section>
-        
-        <section class="dashboard-section">
-          <h2>Manage Availability</h2>
-          <form id="availability-form">
-            <div class="form-group">
-              <label for="day">Day</label>
-              <select id="day" name="day" required>
-                <option value="Monday">Monday</option>
-                <option value="Tuesday">Tuesday</option>
-                <option value="Wednesday">Wednesday</option>
-                <option value="Thursday">Thursday</option>
-                <option value="Friday">Friday</option>
-                <option value="Saturday">Saturday</option>
-                <option value="Sunday">Sunday</option>
-              </select>
-            </div>
-            
-            <div class="form-group">
-              <label for="start-time">Start Time</label>
-              <input type="time" id="start-time" name="startTime" required>
-            </div>
-            
-            <div class="form-group">
-              <label for="end-time">End Time</label>
-              <input type="time" id="end-time" name="endTime" required>
-            </div>
-            
-            <button type="submit" class="btn btn-primary">Add Availability</button>
-          </form>
           
-          <div id="availability-list">
-            <!-- Availability slots will be loaded here -->
+          <h3>My Appointments</h3>
+          <div id="client-appointments" class="cards-container">
+            <!-- Client appointments will be loaded here -->
+            <p>Loading appointments...</p>
           </div>
-        </section>
-      <% } %>
-      
-      <section class="dashboard-section">
-        <h2>Your Chats</h2>
-        <div id="chats-list" class="cards-container">
-          <!-- Chats will be loaded here -->
         </div>
-      </section>
-    </main>
+        
+        <!-- Mentor Dashboard Tab -->
+        <% if(user.roles && user.roles.includes('mentor')) { %>
+          <div class="tab-pane" id="mentor-tab">
+            <h3>My Mentor Profile</h3>
+            <div class="mentor-profile">
+              <% if(mentorProfile) { %>
+                <p><strong>Specialization:</strong> <%= mentorProfile.specialization %></p>
+                <p><strong>Experience:</strong> <%= mentorProfile.experience %> years</p>
+                <p><strong>Hourly Rate:</strong> $<%= mentorProfile.hourlyRate %></p>
+                <p><strong>Bio:</strong> <%= mentorProfile.bio %></p>
+                <button class="btn btn-secondary" id="edit-mentor-profile">Edit Profile</button>
+              <% } else { %>
+                <p>Your mentor profile is incomplete. Please update it.</p>
+                <button class="btn btn-primary" id="complete-mentor-profile">Complete Profile</button>
+              <% } %>
+            </div>
+            
+            <h3>Upcoming Sessions</h3>
+            <div id="mentor-appointments" class="cards-container">
+              <!-- Mentor appointments will be loaded here -->
+              <p>Loading sessions...</p>
+            </div>
+          </div>
+        <% } %>
+      </div>
+    </div>
     
-    <%- include('partials/footer') %>
+    <% if(!user.roles || !user.roles.includes('mentor')) { %>
+      <div class="become-mentor-section">
+        <h3>Want to share your expertise?</h3>
+        <p>You can become a mentor and help others with your knowledge!</p>
+        <button id="become-mentor-btn" class="btn btn-success">Become a Mentor</button>
+      </div>
+    <% } %>
+    
+    <div class="dashboard-footer">
+      <a href="/" class="btn btn-primary">Home</a>
+      <a href="/logout" class="btn btn-danger">Logout</a>
+    </div>
+  </div>
+  
+  <!-- Modal for becoming a mentor -->
+  <div id="mentor-modal" class="modal">
+    <div class="modal-content">
+      <span class="close">&times;</span>
+      <h2>Become a Mentor</h2>
+      <form id="mentor-form">
+        <div class="form-group">
+          <label for="specialization">Specialization</label>
+          <input type="text" id="specialization" name="specialization" required>
+        </div>
+        <div class="form-group">
+          <label for="experience">Years of Experience</label>
+          <input type="number" id="experience" name="experience" min="0" required>
+        </div>
+        <div class="form-group">
+          <label for="hourlyRate">Hourly Rate ($)</label>
+          <input type="number" id="hourlyRate" name="hourlyRate" min="0" required>
+        </div>
+        <div class="form-group">
+          <label for="bio">Bio</label>
+          <textarea id="bio" name="bio" rows="4" required></textarea>
+        </div>
+        <button type="submit" class="btn btn-success">Submit</button>
+      </form>
+    </div>
   </div>
   
   <script src="/js/dashboard.js"></script>

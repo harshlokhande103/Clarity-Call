@@ -3,8 +3,7 @@ const router = express.Router();
 const { 
   registerUser, 
   loginUser,
-  getUserProfile,
-  getMentors
+  getUserProfile
 } = require('../controllers/userController');
 const { protect } = require('../middleware/auth');
 
@@ -16,8 +15,5 @@ router.post('/login', loginUser);
 
 // Get user profile
 router.get('/profile', protect, getUserProfile);
-
-// Get all mentors
-router.get('/mentors', getMentors);
 
 module.exports = router;

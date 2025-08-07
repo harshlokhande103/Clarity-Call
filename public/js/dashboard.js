@@ -411,6 +411,37 @@ async function removeAvailabilitySlot(index) {
   }
 }
 
+// Helper function to render appointment card
+function renderAppointmentCard(appointment, container, role) {
+  const appointmentCard = document.createElement('div');
+  appointmentCard.className = 'card';
+  
+  const date = new Date(appointment.date).toLocaleDateString();
+  const otherPerson = role === 'client' ? 
+    (appointment.mentor.name || 'Mentor') : 
+    (appointment.client.name || 'Client');
+  
+  appointmentCard.innerHTML = `
+    <div class="card-header">
+      <h3>Session with ${otherPerson}</h3>
+      <span class="badge ${getStatusClass(appointment.status)}">${appointment.status || 'scheduled'}</span>
+    </div>
+    <div class="card-body">
+      <p><strong>Date:</strong> ${date}</p>
+      <p><strong>Time:</strong> ${appointment.time || 'Not specified'}</p>
+      <p><strong>Duration:</strong> ${appointment.duration || 60} minutes</p>
+      <p><strong>Notes:</strong> ${appointment.notes || 'No notes'}</p>
+    </div>
+    <div class="card-footer">
+      ${appointment.status !== 'cancelled' ? 
+        `<button class="btn btn-danger cancel-appointment" data-id="${appointment._id}">Cancel</button>` : ''}
+      <button class="btn btn-secondary start-chat" data-id="${appointment._id}">Chat</button>
+    </div>
+  `;
+  
+  container.appendChild(appointmentCard);
+}
+
 // Initialize dashboard based on user role
 async function initDashboard() {
   // Fetch user profile
@@ -472,5 +503,88 @@ async function initDashboard() {
   }
 }
 
-// Run initialization when DOM is loaded
-document.addEventListener('DOMContentLoaded', initDashboard);
+// Tab functionality
+document.addEventListener('DOMContentLoaded', function() {
+  // Tab switching
+  const tabButtons = document.querySelectorAll('.tab-btn');
+  const tabPanes = document.querySelectorAll('.tab-pane');
+  
+  tabButtons.forEach(button => {
+    button.addEventListener('click', function() {
+      // Remove active class from all buttons and panes
+      tabButtons.forEach(btn => btn.classList.remove('active'));
+      tabPanes.forEach(pane => pane.classList.remove('active'));
+      
+      // Add active class to clicked button
+      this.classList.add('active');
+      
+      // Show corresponding tab pane
+      const tabId = this.getAttribute('data-tab');
+      document.getElementById(tabId).classList.add('active');
+    });
+  });
+  
+  // Become a mentor modal
+  const becomeBtn = document.getElementById('become-mentor-btn');
+  const mentorModal = document.getElementById('mentor-modal');
+  const closeBtn = document.querySelector('.close');
+  
+  if (becomeBtn) {
+    becomeBtn.addEventListener('click', function() {
+      mentorModal.style.display = 'block';
+    });
+  }
+  
+  if (closeBtn) {
+    closeBtn.addEventListener('click', function() {
+      mentorModal.style.display = 'none';
+    });
+  }
+  
+  // Close modal when clicking outside
+  window.addEventListener('click', function(event) {
+    if (event.target === mentorModal) {
+      mentorModal.style.display = 'none';
+    }
+  });
+  
+  // Handle mentor form submission
+  const mentorForm = document.getElementById('mentor-form');
+  if (mentorForm) {
+    mentorForm.addEventListener('submit', async function(e) {
+      e.preventDefault();
+      
+      const formData = {
+        specialization: document.getElementById('specialization').value,
+        experience: document.getElementById('experience').value,
+        hourlyRate: document.getElementById('hourlyRate').value,
+        bio: document.getElementById('bio').value
+      };
+      
+      try {
+        const response = await fetch('/api/users/become-mentor', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(formData),
+          credentials: 'include'
+        });
+        
+        if (response.ok) {
+          alert('Congratulations! You are now a mentor.');
+          window.location.reload();
+        } else {
+          const data = await response.json();
+          alert(`Error: ${data.message || 'Something went wrong'}`);
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        alert('Failed to become a mentor. Please try again.');
+      }
+    });
+  }
+  
+  // Initialize dashboard data
+  initDashboard();
+});

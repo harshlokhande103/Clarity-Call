@@ -14,6 +14,30 @@
       <div class="alert alert-danger"><%= error %></div>
     <% } %>
     
+    <% if(typeof error_msg !== 'undefined' && error_msg.length > 0) { %>
+      <div class="alert alert-danger">
+        <% if(Array.isArray(error_msg)) { %>
+          <% error_msg.forEach(function(msg) { %>
+            <div><%= msg %></div>
+          <% }); %>
+        <% } else { %>
+          <%= error_msg %>
+        <% } %>
+      </div>
+    <% } %>
+    
+    <% if(typeof success_msg !== 'undefined' && success_msg.length > 0) { %>
+      <div class="alert alert-success">
+        <% if(Array.isArray(success_msg)) { %>
+          <% success_msg.forEach(function(msg) { %>
+            <div><%= msg %></div>
+          <% }); %>
+        <% } else { %>
+          <%= success_msg %>
+        <% } %>
+      </div>
+    <% } %>
+    
     <!-- Change the form action to point to the correct endpoint -->
     <form action="/api/users/login" method="POST">
       <div class="form-group">

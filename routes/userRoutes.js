@@ -3,7 +3,12 @@ const router = express.Router();
 const { 
   registerUser, 
   loginUser,
-  getUserProfile
+  getUserProfile,
+  addAvailability,
+  getAvailability,
+  deleteAvailability,
+  updateProfile, // Add this line
+  changePassword // Add this line
 } = require('../controllers/userController');
 const { protect } = require('../middleware/auth');
 
@@ -15,5 +20,13 @@ router.post('/login', loginUser);
 
 // Get user profile
 router.get('/profile', protect, getUserProfile);
+
+// Availability routes
+router.post('/availability', protect, addAvailability);
+router.get('/availability', protect, getAvailability);
+router.delete('/availability/:id', protect, deleteAvailability);
+
+router.put('/profile', protect, updateProfile);
+router.put('/password', protect, changePassword);
 
 module.exports = router;

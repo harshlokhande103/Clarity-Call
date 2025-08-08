@@ -10,6 +10,8 @@ const connectDB = require('./config/db');
 const path = require('path');
 const cookieParser = require('cookie-parser');
 const session = require('express-session');
+const userRoutes = require('./routes/userRoutes');
+const { protect } = require('./middleware/auth'); // यह लाइन जोड़ें
 
 // Load env vars
 dotenv.config();
@@ -63,7 +65,12 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.set('view engine', 'ejs');
 
 // Routes
-app.use('/api/users', require('./routes/userRoutes'));
+app.use('/api/users', userRoutes);
+
+// Settings page route
+app.get('/settings', protect, (req, res) => {
+    res.render('settings', { title: 'Settings', user: req.user });
+});
 app.use('/', require('./routes/viewRoutes'));
 
 const PORT = process.env.PORT || 3000;

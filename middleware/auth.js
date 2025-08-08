@@ -1,4 +1,4 @@
-const jwt = require('jsonwebtoken');
+const jwt = require('jsonwebtoken'); // Yeh line add karein
 const User = require('../models/User');
 
 // Protect routes

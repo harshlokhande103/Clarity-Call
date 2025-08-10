@@ -38,16 +38,13 @@ const registerUser = async (req, res) => {
     });
 
     if (user) {
-      // Create token
       const token = generateToken(user._id);
       
-      // Set token in cookie
       res.cookie('token', token, {
         httpOnly: true,
         maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
       });
       
-      // Redirect to dashboard
       res.redirect('/dashboard');
     } else {
       req.flash('error_msg', 'Invalid user data');
@@ -67,32 +64,20 @@ const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
     
-    // Find user by email
     const user = await User.findOne({ email });
     
-    if (!user) {
+    if (!user || !(await user.matchPassword(password))) {
       req.flash('error_msg', 'Invalid email or password');
       return res.redirect('/login');
     }
     
-    // Check if password matches
-    const isMatch = await user.matchPassword(password);
-    
-    if (!isMatch) {
-      req.flash('error_msg', 'Invalid email or password');
-      return res.redirect('/login');
-    }
-    
-    // Create token
     const token = generateToken(user._id);
     
-    // Set token in cookie
     res.cookie('token', token, {
       httpOnly: true,
       maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
     });
     
-    // Redirect to dashboard
     res.redirect('/dashboard');
   } catch (error) {
     console.error('Login error:', error);
@@ -106,17 +91,13 @@ const loginUser = async (req, res) => {
 // @access  Private
 const getUserProfile = async (req, res) => {
   try {
-    const user = await User.findById(req.user._id);
+    const user = await User.findById(req.user._id).select('-password');
 
-    if (user) {
-      res.json({
-        _id: user._id,
-        name: user.name,
-        email: user.email
-      });
-    } else {
-      res.status(404).json({ message: 'User not found' });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
     }
+
+    res.json(user);
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Server Error' });
@@ -129,9 +110,7 @@ const getUserProfile = async (req, res) => {
 const addAvailability = async (req, res) => {
   try {
     const { day, startTime, endTime } = req.body;
-    const userId = req.user.id;
 
-    // Validate input
     if (!day || !startTime || !endTime) {
       return res.status(400).json({ message: 'All fields are required' });
     }
@@ -140,13 +119,11 @@ const addAvailability = async (req, res) => {
       return res.status(400).json({ message: 'Invalid time format. Use HH:mm' });
     }
 
-    // Find user
-    const user = await User.findById(userId);
+    const user = await User.findById(req.user._id);
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // Add availability slot
     user.availability.push({ day, startTime, endTime });
     await user.save();
 
@@ -162,8 +139,7 @@ const addAvailability = async (req, res) => {
 // @access  Private
 const getAvailability = async (req, res) => {
   try {
-    const userId = req.user.id;
-    const user = await User.findById(userId);
+    const user = await User.findById(req.user._id);
     
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
@@ -181,17 +157,17 @@ const getAvailability = async (req, res) => {
 // @access  Private
 const deleteAvailability = async (req, res) => {
   try {
-    const { id } = req.params;
-    const userId = req.user.id;
-
-    // Find user
-    const user = await User.findById(userId);
+    const user = await User.findById(req.user._id);
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // Remove availability slot
-    user.availability = user.availability.filter((slot, index) => index !== parseInt(id));
+    const slotIndex = parseInt(req.params.id);
+    if (slotIndex < 0 || slotIndex >= user.availability.length) {
+      return res.status(400).json({ message: 'Invalid slot index' });
+    }
+
+    user.availability.splice(slotIndex, 1);
     await user.save();
 
     res.json({ message: 'Availability slot removed successfully' });
@@ -208,20 +184,20 @@ const updateProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
 
-    if (user) {
-      user.name = req.body.name || user.name;
-      user.email = req.body.email || user.email;
-
-      const updatedUser = await user.save();
-
-      res.json({
-        _id: updatedUser._id,
-        name: updatedUser.name,
-        email: updatedUser.email,
-      });
-    } else {
-      res.status(404).json({ message: 'User not found' });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
     }
+
+    user.name = req.body.name || user.name;
+    user.email = req.body.email || user.email;
+
+    const updatedUser = await user.save();
+
+    res.json({
+      _id: updatedUser._id,
+      name: updatedUser.name,
+      email: updatedUser.email,
+    });
   } catch (error) {
     console.error('Error updating profile:', error);
     res.status(500).json({ message: 'Server Error' });
@@ -235,30 +211,33 @@ const changePassword = async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
 
-    if (user) {
-      const { currentPassword, newPassword, confirmNewPassword } = req.body;
-
-      if (!currentPassword || !newPassword || !confirmNewPassword) {
-        return res.status(400).json({ message: 'Please fill all fields' });
-      }
-
-      if (newPassword !== confirmNewPassword) {
-        return res.status(400).json({ message: 'New password and confirm password do not match' });
-      }
-
-      const isMatch = await user.matchPassword(currentPassword);
-
-      if (!isMatch) {
-        return res.status(401).json({ message: 'Invalid current password' });
-      }
-
-      user.password = newPassword; // This will be hashed by the pre-save hook in the User model
-      await user.save();
-
-      res.status(200).json({ message: 'Password changed successfully' });
-    } else {
-      res.status(404).json({ message: 'User not found' });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
     }
+
+    const { currentPassword, newPassword, confirmNewPassword } = req.body;
+
+    // Add these console.log statements
+    console.log('req.body:', req.body);
+    console.log('req.user._id:', req.user._id);
+
+    if (!currentPassword || !newPassword || !confirmNewPassword) {
+      return res.status(400).json({ message: 'Please fill all fields' });
+    }
+
+    if (newPassword !== confirmNewPassword) {
+      return res.status(400).json({ message: 'New password and confirm password do not match' });
+    }
+
+    const isMatch = await user.matchPassword(currentPassword);
+    if (!isMatch) {
+      return res.status(401).json({ message: 'Current password is incorrect' });
+    }
+
+    user.password = newPassword;
+    await user.save();
+
+    res.json({ message: 'Password updated successfully' });
   } catch (error) {
     console.error('Error changing password:', error);
     res.status(500).json({ message: 'Server Error' });

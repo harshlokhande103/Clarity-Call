@@ -98,7 +98,7 @@
         const response = await fetch('/api/users/password', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ currentPassword, newPassword })
+          body: JSON.stringify({ currentPassword, newPassword, confirmNewPassword }) // confirmNewPassword यहाँ जोड़ा गया है
         });
         const data = await response.json();
         if (response.ok) {

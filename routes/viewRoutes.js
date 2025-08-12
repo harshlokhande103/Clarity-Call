@@ -49,6 +49,11 @@ router.get('/login', (req, res) => {
   res.render('login', { title: 'Login' });
 });
 
+// Forgot Password page
+router.get('/forgot_password', (req, res) => {
+  res.render('forgot_password', { title: 'Forgot Password' });
+});
+
 // Dashboard page (protected)
 router.get('/dashboard', isAuthenticated, async (req, res) => {
   try {

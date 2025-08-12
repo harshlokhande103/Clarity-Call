@@ -67,6 +67,7 @@ app.set('view engine', 'ejs');
 // Routes
 app.use('/api/users', userRoutes);
 
+
 // Settings page route
 app.get('/settings', protect, (req, res) => {
     res.render('settings', { title: 'Settings', user: req.user });

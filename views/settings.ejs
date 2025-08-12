@@ -61,7 +61,33 @@
 
   <script>
     document.getElementById('update-profile-form').addEventListener('submit', async (e) => {
-      e.preventDefault();
+      // Add to form submission handler
+      const updateProfile = async (e) => {
+        e.preventDefault();
+        
+        const formData = {
+          name: document.getElementById('name').value,
+          email: document.getElementById('email').value,
+          currentPassword: document.getElementById('currentPassword').value,
+          newPassword: document.getElementById('newPassword').value
+        };
+      
+        try {
+          const response = await fetch('/api/users/profile', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(formData)
+          });
+      
+          const data = await response.json();
+          if (!response.ok) throw data;
+          
+          alert('Profile updated successfully!');
+          window.location.reload();
+        } catch (error) {
+          alert(`Error: ${error.message || 'Update failed'}`);
+        }
+      };
       const name = document.getElementById('name').value;
       const email = document.getElementById('email').value;
 
@@ -89,16 +115,16 @@
       const newPassword = document.getElementById('newPassword').value;
       const confirmNewPassword = document.getElementById('confirmNewPassword').value;
 
-      if (newPassword !== confirmNewPassword) {
-        alert('New password and confirm password do not match.');
-        return;
+      // फॉर्म सबमिशन से पहले
+      if (newPassword !== confirmNewPassword) { // यहाँ बदलाव किया गया है
+          alert('New password and confirm password do not match.');
+          return;
       }
-
       try {
         const response = await fetch('/api/users/password', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ currentPassword, newPassword, confirmNewPassword }) // confirmNewPassword यहाँ जोड़ा गया है
+          body: JSON.stringify({ currentPassword, newPassword, confirmNewPassword })
         });
         const data = await response.json();
         if (response.ok) {
